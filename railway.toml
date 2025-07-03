@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+buildCommand = "./mvnw clean package -DskipTests"
+
+[deploy]
+startCommand = "java -jar target/*.jar --spring.profiles.active=prod"
+healthcheckPath = "/actuator/health"
+healthcheckTimeout = 100
