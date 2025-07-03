@@ -1,5 +1,7 @@
 package com.siddardha.InvoiceManagement.Controller;
 
+import com.siddardha.InvoiceManagement.DTO.InvoiceDTO;
+import com.siddardha.InvoiceManagement.Mapper.InvoiceMapper;
 import com.siddardha.InvoiceManagement.Model.Invoice;
 import com.siddardha.InvoiceManagement.Service.EmailService;
 import com.siddardha.InvoiceManagement.Service.InvoiceService;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -19,21 +22,36 @@ public class InvoiceController {
     private final InvoiceService invoiceService;
     private final PdfGeneratorService pdfGeneratorService;
     private final EmailService emailService;
+    private final InvoiceMapper invoiceMapper;
 
-    public InvoiceController(InvoiceService invoiceService, PdfGeneratorService pdfGeneratorService, EmailService emailService) {
+    public InvoiceController(InvoiceService invoiceService, 
+                           PdfGeneratorService pdfGeneratorService, 
+                           EmailService emailService,
+                           InvoiceMapper invoiceMapper) {
         this.invoiceService = invoiceService;
         this.pdfGeneratorService = pdfGeneratorService;
         this.emailService = emailService;
+        this.invoiceMapper = invoiceMapper;
     }
 
     @GetMapping
-    public List<Invoice> getAllInvoices() {
-        return invoiceService.getAllInvoices();
+    public List<InvoiceDTO> getAllInvoices() {
+        return invoiceService.getAllInvoices().stream()
+                .map(invoiceMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/{id}")
+    public InvoiceDTO getInvoiceById(@PathVariable Long id) {
+        Invoice invoice = invoiceService.getInvoiceById(id);
+        return invoiceMapper.toDto(invoice);
     }
 
     @PostMapping
-    public Invoice createInvoice(@RequestBody Invoice invoice) {
-        return invoiceService.saveInvoice(invoice);
+    public InvoiceDTO createInvoice(@RequestBody InvoiceDTO invoiceDTO) {
+        Invoice invoice = invoiceMapper.toEntity(invoiceDTO);
+        Invoice savedInvoice = invoiceService.saveInvoice(invoice);
+        return invoiceMapper.toDto(savedInvoice);
     }
 
     @GetMapping("/{id}/pdf")
@@ -67,7 +85,24 @@ public class InvoiceController {
         return ResponseEntity.ok("Invoice sent to " + invoice.getClient().getEmail());
     }
 
-
-
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteInvoice(@PathVariable Long id) {
+        invoiceService.deleteInvoice(id);
+        return ResponseEntity.ok("Invoice deleted successfully");
+    }
+    
+    @PutMapping("/{id}")
+    public ResponseEntity<InvoiceDTO> updateInvoice(@PathVariable Long id, @RequestBody InvoiceDTO invoiceDTO) {
+        // Ensure the ID in the path matches the ID in the request body
+        if (invoiceDTO.getId() != null && !id.equals(invoiceDTO.getId())) {
+            throw new RuntimeException("ID in path does not match ID in request body");
+        }
+        // Set the ID from path to ensure consistency
+        invoiceDTO.setId(id);
+        
+        Invoice invoice = invoiceMapper.toEntity(invoiceDTO);
+        Invoice updatedInvoice = invoiceService.updateInvoice(id, invoice);
+        return ResponseEntity.ok(invoiceMapper.toDto(updatedInvoice));
+    }
 }
 

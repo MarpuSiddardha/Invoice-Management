@@ -1,12 +1,16 @@
 package com.siddardha.InvoiceManagement.Model;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = "invoice")
+@EqualsAndHashCode(exclude = "invoice")
 public class InvoiceItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -16,7 +20,8 @@ public class InvoiceItem {
     private Integer quantity;
     private Double price;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_id")
     @JsonBackReference
     private Invoice invoice;
 }
