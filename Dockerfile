@@ -16,3 +16,6 @@ EXPOSE 8080
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=docker"]
+
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/actuator/health || exit 1
